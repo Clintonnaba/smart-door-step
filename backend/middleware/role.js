@@ -1,4 +1,6 @@
 module.exports = (role) => (req, res, next) => {
-  // Dummy role middleware: always allow
+  if (!req.user || req.user.role !== role) {
+    return res.status(403).json({ message: 'Forbidden: Insufficient role' });
+  }
   next();
 };

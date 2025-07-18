@@ -17,22 +17,25 @@ const Service = require('./service')(sequelize);
 const Booking = require('./booking')(sequelize);
 const Payment = require('./payment')(sequelize);
 const Review = require('./review')(sequelize);
+const Admin = require('./admin')(sequelize);
+const Technician = require('./technician')(sequelize);
+const Customer = require('./customer')(sequelize);
+
+// Join table for many-to-many Service-Technician
+const ServiceTechnician = sequelize.define('ServiceTechnician', {}, { timestamps: false });
 
 // Associations
-User.hasMany(Booking);
-Booking.belongsTo(User);
-
-Service.hasMany(Booking);
-Booking.belongsTo(Service);
-
 Booking.hasOne(Payment);
 Payment.belongsTo(Booking);
-
 User.hasMany(Review);
 Review.belongsTo(User);
-
 Service.hasMany(Review);
 Review.belongsTo(Service);
+
+// Many-to-many Service-Technician
+if (User.associate) User.associate({ Service });
+if (Service.associate) Service.associate({ User });
+if (Booking.associate) Booking.associate({ User, Service });
 
 module.exports = {
   sequelize,
@@ -41,4 +44,8 @@ module.exports = {
   Booking,
   Payment,
   Review,
+  Admin,
+  Technician,
+  Customer,
+  ServiceTechnician,
 };

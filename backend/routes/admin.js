@@ -3,6 +3,8 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const auth = require('../middleware/auth');
 const role = require('../middleware/role');
+const { User } = require('../models');
+const bookingController = require('../controllers/bookingController');
 
 router.get('/dashboard', auth, role('admin'), adminController.dashboard);
 router.get('/users', auth, role('admin'), adminController.getUsers);
@@ -17,5 +19,10 @@ router.delete('/providers/:id', auth, role('admin'), adminController.deleteProvi
 
 router.get('/feedback', auth, role('admin'), adminController.getFeedback);
 router.post('/announcements', auth, role('admin'), adminController.sendAnnouncement);
+
+// Admin booking approval endpoints
+router.get('/bookings/pending', auth, role('admin'), bookingController.getPendingBookings);
+router.put('/bookings/:id/approve', auth, role('admin'), bookingController.approveBooking);
+router.put('/bookings/:id/reject', auth, role('admin'), bookingController.rejectBooking);
 
 module.exports = router;

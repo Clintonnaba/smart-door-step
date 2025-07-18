@@ -6,8 +6,20 @@ module.exports = (sequelize) => {
     providerId: { type: DataTypes.INTEGER, allowNull: true },
     date: { type: DataTypes.DATEONLY, allowNull: false },
     time: { type: DataTypes.TIME, allowNull: false },
-    status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'pending' },
+    status: {
+      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
+      allowNull: false,
+      defaultValue: 'Pending'
+    },
     price: { type: DataTypes.FLOAT, allowNull: false },
+    // userId, technicianId, serviceId are defined via associations only
   });
+
+  Booking.associate = (models) => {
+    Booking.belongsTo(models.User, { as: 'user', foreignKey: 'userId' });
+    Booking.belongsTo(models.User, { as: 'technician', foreignKey: 'technicianId' });
+    Booking.belongsTo(models.Service, { as: 'service', foreignKey: 'serviceId' });
+  };
+
   return Booking;
 };

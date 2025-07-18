@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/../.env' });
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
@@ -8,18 +8,62 @@ const serviceRoutes = require('./routes/services');
 const bookingRoutes = require('./routes/bookings');
 const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
+const technicianRoutes = require('./routes/technicians');
+const usersRoutes = require('./routes/users');
 
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  },
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  // Expect client to emit 'register' with { userId, role }
+  socket.on('register', ({ userId, role }) => {
+    if (userId && role) {
+      socket.join(`${role}_${userId}`);
+      console.log(`Socket ${socket.id} joined room ${role}_${userId}`);
+    }
+  });
+  socket.on('disconnect', () => {
+    // No action needed for now
+  });
+});
+
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(express.json());
 
-app.use('/auth', authRoutes);
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// Debug route to test if routes are working
+app.get('/test', (req, res) => {
+  res.json({ message: 'Test route working' });
+});
+
+console.log('Mounting routes...');
+app.use('/api', authRoutes);
+console.log('Auth routes mounted at /api');
 app.use('/services', serviceRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/admin', adminRoutes);
+app.use('/technicians', technicianRoutes);
+app.use('/api/users', usersRoutes);
+console.log('All routes mounted');
 
 app.get('/', (req, res) => {
   res.send('Backend is running!');
@@ -32,7 +76,11 @@ app.use((err, req, res, next) => {
 });
 
 sequelize.sync().then(() => {
-  app.listen(PORT, () => {
+  console.log('Database synced successfully');
+  server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
+}).catch((error) => {
+  console.error('Database sync failed:', error);
+  process.exit(1);
 }); 
