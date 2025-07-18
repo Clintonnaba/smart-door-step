@@ -4,6 +4,8 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import { techniciansAPI } from '../api/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 
 export default function BookService() {
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ export default function BookService() {
   const [techLoading, setTechLoading] = useState(false);
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_API_URL}/services`)
+    axios.get(`${API_BASE_URL}/services`)
       .then(res => setServices(res.data))
       .catch(() => setServices([]));
   }, []);
@@ -66,7 +68,7 @@ export default function BookService() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${import.meta.env.VITE_API_URL}/bookings`, { serviceId, date, description }, {
+      await axios.post(`${API_BASE_URL}/bookings`, { serviceId, date, description }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStatus('Booking successful!');

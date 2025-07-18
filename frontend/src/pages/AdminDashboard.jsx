@@ -3,6 +3,8 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -24,10 +26,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     Promise.all([
-      axios.get(`${import.meta.env.VITE_API_URL}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get(`${import.meta.env.VITE_API_URL}/services`, { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get(`${import.meta.env.VITE_API_URL}/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get(`${import.meta.env.VITE_API_URL}/admin/bookings/pending`, { headers: { Authorization: `Bearer ${token}` } })
+      axios.get(`${API_BASE_URL}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE_URL}/services`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE_URL}/bookings`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE_URL}/admin/bookings/pending`, { headers: { Authorization: `Bearer ${token}` } })
     ])
       .then(([usersRes, servicesRes, bookingsRes, pendingRes]) => {
         setUsers(usersRes.data);
@@ -41,7 +43,7 @@ export default function AdminDashboard() {
 
   const handleApprove = async (id) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/admin/bookings/${id}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`${API_BASE_URL}/admin/bookings/${id}/approve`, {}, { headers: { Authorization: `Bearer ${token}` } });
       setPendingBookings(pendingBookings.filter(b => b.id !== id));
     } catch {
       setError('Failed to approve booking.');
@@ -50,7 +52,7 @@ export default function AdminDashboard() {
 
   const handleReject = async (id) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/admin/bookings/${id}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`${API_BASE_URL}/admin/bookings/${id}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
       setPendingBookings(pendingBookings.filter(b => b.id !== id));
     } catch {
       setError('Failed to reject booking.');

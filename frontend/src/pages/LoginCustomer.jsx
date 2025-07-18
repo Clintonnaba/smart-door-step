@@ -10,13 +10,15 @@ export default function LoginCustomer() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/login`, { email, password });
+      const res = await axios.post(`${API_BASE_URL}/api/users/login`, { email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setLoading(false);

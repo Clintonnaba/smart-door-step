@@ -11,10 +11,11 @@ export default function UserProfile() {
   const [updateMsg, setUpdateMsg] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    axios.get(`${import.meta.env.VITE_API_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(`${API_BASE_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => {
         setUser(res.data);
         setName(res.data.name);
@@ -29,7 +30,7 @@ export default function UserProfile() {
     setUpdateMsg('');
     const token = localStorage.getItem('token');
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/users/me`, { name, phone }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.put(`${API_BASE_URL}/users/me`, { name, phone }, { headers: { Authorization: `Bearer ${token}` } });
       setUpdateMsg('Profile updated!');
       setEdit(false);
       setUser({ ...user, name, phone });

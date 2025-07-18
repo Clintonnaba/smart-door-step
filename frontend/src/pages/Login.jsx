@@ -10,6 +10,9 @@ const roleEndpoints = {
   customer: '/api/users/login',
 };
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
+
 export default function Login() {
   const [role, setRole] = useState(null); // null until selected
   const [email, setEmail] = useState('');
@@ -31,7 +34,7 @@ export default function Login() {
     setLoading(true);
     try {
       const endpoint = roleEndpoints[role];
-      const url = `${import.meta.env.VITE_API_URL || ''}${endpoint}`;
+      const url = `${API_BASE_URL || ''}${endpoint}`;
       const res = await axios.post(url, { email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));

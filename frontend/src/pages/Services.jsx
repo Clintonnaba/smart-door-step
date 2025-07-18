@@ -7,9 +7,10 @@ export default function Services() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_API_URL}/services`)
+    axios.get(`${API_BASE_URL}/services`)
       .then(res => setServices(res.data))
       .catch(() => setError('Failed to load services.'))
       .finally(() => setLoading(false));

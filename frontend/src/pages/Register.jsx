@@ -12,6 +12,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +35,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/users/register`, { name, email, phone, password });
+      await axios.post(`${API_BASE_URL}/users/register`, { name, email, phone, password });
       setLoading(false);
       navigate('/login');
     } catch (err) {
