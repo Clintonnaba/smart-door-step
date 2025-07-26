@@ -1,58 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { techniciansAPI } from '../api/api';
-
-const randomNames = [
-  'Ram Bahadur', 'Sita Kumari', 'Hari Prasad', 'Gita Sharma', 'Bikash Thapa',
-  'Sunita Karki', 'Ramesh Shrestha', 'Manita Lama', 'Kiran Gurung', 'Puja Rai'
-];
-
-function getRandomName() {
-  return randomNames[Math.floor(Math.random() * randomNames.length)];
-}
-
-function getRandomFare(base = 1000) {
-  // Simulate a fare between base-200 and base+200
-  const delta = Math.floor(Math.random() * 400) - 200;
-  return base + delta;
-}
 
 const NotificationOffers = ({
   show, // boolean to show/hide
   baseFare = 1000,
   onAccept,
   onReject,
-  onNegotiate
+  onNegotiate,
+  realOffers = [] // Accept real offers from parent
 }) => {
   const [offers, setOffers] = useState([]);
-  const [timers, setTimers] = useState([]);
-  const [technicians, setTechnicians] = useState([]);
 
   useEffect(() => {
-    if (show) {
-      // Fetch real technicians from backend
-      techniciansAPI.getAllTechnicians().then(res => {
-        // Only use technicians with IDs 1-4
-        const techs = res.data.filter(t => [1,2,3,4].includes(t.id));
-        setTechnicians(techs);
-        // Generate 4 offers from real technicians
-        const count = Math.min(techs.length, 4);
-        const shuffled = [...techs].sort(() => 0.5 - Math.random());
-        const selected = shuffled.slice(0, count);
-        const newOffers = selected.map((tech, i) => ({
-          id: tech.id,
-          technicianName: tech.name,
-          fare: getRandomFare(baseFare),
-          status: 'pending',
-          timeLeft: 300 // 5 minutes
-        }));
-        setOffers(newOffers);
-        setTimers(newOffers.map(o => o.timeLeft));
-      });
-    } else {
+    if (show && realOffers.length > 0) {
+      // Use real offers from Socket.IO
+      const formattedOffers = realOffers.map(offer => ({
+        id: offer.technicianId,
+        technicianName: offer.technicianName,
+        fare: offer.proposedFare,
+        eta: offer.eta,
+        status: 'pending',
+        timeLeft: 300 // 5 minutes
+      }));
+      setOffers(formattedOffers);
+    } else if (!show) {
       setOffers([]);
-      setTimers([]);
     }
-  }, [show, baseFare]);
+  }, [show, realOffers]);
 
   // Timer countdown
   useEffect(() => {

@@ -228,8 +228,9 @@ exports.technicianLogin = async (req, res) => {
 
 exports.customerLogin = async (req, res) => {
   try {
+    console.log('[CUSTOMER LOGIN] Raw body:', req.body);
     const { email, password } = req.body;
-    console.log('[CUSTOMER LOGIN] Attempt:', { email, password: '***' });
+    console.log('[CUSTOMER LOGIN] Parsed:', { email, password });
     const customer = await User.findOne({ where: { email, role: 'user' } });
     console.log('[CUSTOMER LOGIN] User found:', !!customer);
     if (!customer) {
@@ -248,7 +249,7 @@ exports.customerLogin = async (req, res) => {
         customerId: customer.id,
         fullName: customer.fullName,
         email: customer.email,
-        role: 'customer',
+        role: 'user',
         phone: customer.phone
       },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -260,7 +261,7 @@ exports.customerLogin = async (req, res) => {
         id: customer.id,
         fullName: customer.fullName,
         email: customer.email,
-        role: 'customer',
+        role: 'user',
         phone: customer.phone
       }
     });

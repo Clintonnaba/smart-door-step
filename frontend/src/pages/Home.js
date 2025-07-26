@@ -82,6 +82,13 @@ const Home = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-blue-600 text-white py-20">
         <div className="container mx-auto px-4 text-center">
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/assets/logo.png" 
+              alt="Smart Door Step Logo" 
+              className="h-20 w-auto rounded-none shadow-none"
+            />
+          </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Smart Door Step
           </h1>

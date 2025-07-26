@@ -1,42 +1,31 @@
+console.log('Technician routes loaded');
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models');
-const { ServiceTechnician } = require('../models');
+const { Technician } = require('../models');
 const auth = require('../middleware/auth');
 const role = require('../middleware/role');
 
-// GET /technicians - return all users with role 'technician'
+// GET /technicians - return all technicians
 router.get('/', async (req, res) => {
   try {
-    const { service, category, gender } = req.query;
-    let technicians;
-    let where = { role: 'technician' };
+    console.log('GET /api/technicians handler hit');
+    const { gender } = req.query;
+    let where = {};
     if (gender) where.gender = gender;
-    if (category) {
-      if (category.toLowerCase().includes('clean')) {
-        where.gender = 'female';
-      } else {
-        where.gender = 'male';
-      }
-    }
-    if (service) {
-      // Find all userIds for this service
-      const links = await ServiceTechnician.findAll({ where: { serviceId: service } });
-      const userIds = links.map(l => l.userId);
-      technicians = await User.findAll({ where: { ...where, id: userIds } });
-    } else {
-      technicians = await User.findAll({ where });
-    }
-    // Add mock availability and rating for demo
+    const technicians = await Technician.findAll({ where });
+    console.log('Technicians found:', technicians.length);
     const result = technicians.map(t => ({
       id: t.id,
-      name: t.fullName,
+      name: t.name,
       email: t.email,
       phone: t.phone,
       skills: t.skills,
       gender: t.gender,
+      location: t.location,
+      age: t.age,
+      role: t.role,
       availability: 'Available today',
-      rating: 4.5 + (t.id % 5) * 0.1, // 4.5-4.9
+      rating: 4.5 + (t.id % 5) * 0.1,
     }));
     res.json(result);
   } catch (error) {
@@ -47,15 +36,23 @@ router.get('/', async (req, res) => {
 
 router.get('/profile', auth, role('technician'), async (req, res) => {
   try {
-    const { User } = require('../models');
-    const technician = await User.findByPk(req.user.userId, {
-      attributes: ['id', 'fullName', 'email', 'phone', 'skills', 'role'],
+    console.log('Profile route hit');
+    const id = req.user.technicianId || req.user.userId;
+    console.log('Technician ID:', id);
+    if (!id) {
+      console.log('No technician ID found in JWT');
+      return res.status(400).json({ message: 'No technician ID in token' });
+    }
+    const technician = await Technician.findByPk(id, {
+      attributes: ['id', 'name', 'email', 'phone', 'skills', 'role', 'location', 'age', 'gender'],
     });
+    console.log('Technician found:', technician);
     if (!technician) {
       return res.status(404).json({ message: 'Technician not found' });
     }
     res.json({ user: technician });
   } catch (err) {
+    console.error('Profile error:', err);
     res.status(500).json({ message: 'Failed to fetch technician profile' });
   }
 });

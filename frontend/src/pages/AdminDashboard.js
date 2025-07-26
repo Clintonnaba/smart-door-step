@@ -75,10 +75,17 @@ const AdminDashboard = () => {
     e.preventDefault();
     
     try {
+      // Map price field to basePrice for backend compatibility
+      const serviceData = {
+        ...serviceForm,
+        basePrice: parseFloat(serviceForm.price)
+      };
+      delete serviceData.price; // Remove price field as backend expects basePrice
+      
       if (editingItem) {
-        await servicesAPI.updateService(editingItem.id, serviceForm);
+        await servicesAPI.updateService(editingItem.id, serviceData);
       } else {
-        await servicesAPI.createService(serviceForm);
+        await servicesAPI.createService(serviceData);
       }
       
       setShowServiceModal(false);
@@ -141,7 +148,7 @@ const AdminDashboard = () => {
       setServiceForm({
         name: item.name,
         description: item.description,
-        price: item.price,
+        price: item.basePrice,
         category: item.category,
         image: item.image
       });
@@ -160,11 +167,17 @@ const AdminDashboard = () => {
 
   const handleBookingAction = async (bookingId, action) => {
     try {
-      await bookingsAPI.updateBookingStatus(bookingId, action);
+      console.log('[ADMIN ACTION]', { bookingId, action });
+      
+      // Map UI actions to API actions
+      const apiAction = action === 'Approved' ? 'grant' : 'deny';
+      
+      await bookingsAPI.adminApproval(bookingId, apiAction);
       fetchAllData();
+      setError(''); // Clear any previous errors
     } catch (error) {
       console.error('Booking action error:', error);
-      setError(`Failed to ${action} booking`);
+      setError(`Failed to ${action.toLowerCase()} booking`);
     }
   };
 
@@ -191,6 +204,9 @@ const AdminDashboard = () => {
       day: 'numeric'
     });
   };
+
+  // Defensive: ensure bookings is always an array
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
 
   if (loading) {
     return (
@@ -291,7 +307,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                    <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">{safeBookings.length}</p>
                   </div>
                 </div>
               </div>
@@ -389,7 +405,7 @@ const AdminDashboard = () => {
                     <h3 className="font-medium text-gray-900 mb-1">{service.name}</h3>
                     <p className="text-sm text-gray-600 mb-2">{service.description}</p>
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-primary font-bold">Rs. {service.price}</span>
+                      <span className="text-primary font-bold">Rs. {service.basePrice}</span>
                       <span className="text-sm text-gray-500">{service.category}</span>
                     </div>
                     <div className="flex space-x-2">
@@ -430,44 +446,44 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {bookings.map((booking) => (
+                    {safeBookings.map((booking) => (
                       <tr key={booking.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {booking.service?.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {booking.user?.fullName}
+                          {booking.user?.fullName || booking.user?.name || 'Unknown'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {booking.technician?.name || 'Unassigned'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {booking.scheduledDate ? formatDate(booking.scheduledDate) : 'TBD'}
+                          {booking.date ? formatDate(booking.date) : 'TBD'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary">
-                          Rs. {booking.totalAmount}
+                          Rs. {booking.price || booking.service?.basePrice || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(booking.status)}
+                          {getStatusBadge(booking.status?.toLowerCase?.() || booking.status)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {booking.status === 'pending' && (
+                          {booking.status?.toLowerCase() === 'pending' && (
                             <div className="flex space-x-2">
                               <button
-                                onClick={() => handleBookingAction(booking.id, 'approved')}
+                                onClick={() => handleBookingAction(booking.id, 'Approved')}
                                 className="text-green-600 hover:text-green-900 font-medium"
                               >
-                                Approve
+                                Grant
                               </button>
                               <button
-                                onClick={() => handleBookingAction(booking.id, 'denied')}
+                                onClick={() => handleBookingAction(booking.id, 'Rejected')}
                                 className="text-red-600 hover:text-red-900 font-medium"
                               >
                                 Deny
                               </button>
                             </div>
                           )}
-                          {booking.status !== 'pending' && (
+                          {booking.status?.toLowerCase() !== 'pending' && (
                             <span className="text-gray-500">No actions available</span>
                           )}
                         </td>

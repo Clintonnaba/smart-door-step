@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { servicesAPI, bookingsAPI, techniciansAPI } from '../api/api';
+import { servicesAPI, bookingsAPI } from '../api/api';
 import NotificationOffers from '../components/ProviderList';
+import { io } from 'socket.io-client';
 
 // Payment logos: use /images/ path for local files
 const paymentLogos = [
@@ -60,7 +61,8 @@ const BookService = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [bellActive, setBellActive] = useState(false); // for notification bell
+  const [realOffers, setRealOffers] = useState([]); // Store real technician offers
+  const socketRef = useRef(null);
 
   // Real-time validation function (memoized)
   const validateFields = useCallback(() => {
@@ -122,10 +124,39 @@ const BookService = () => {
       navigate('/login');
       return;
     }
-    if (user.role !== 'user') {
+    if (user.role !== 'user' && user.role !== 'customer') {
       navigate('/technician/profile');
       return;
     }
+
+    // Connect to Socket.IO for real-time offers
+    const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5001');
+    socket.emit('register', { userId: user.id, role: user.role });
+    
+    // Listen for technician offers
+    socket.on('technician-offer-created', (offer) => {
+      console.log('[REAL OFFER RECEIVED]', offer);
+      setRealOffers(prev => [...prev, offer]);
+      setShowOffers(true);
+    });
+
+    // Listen for admin approval
+    socket.on('admin:booking-approved', (data) => {
+      console.log('[ADMIN APPROVAL]', data);
+      if (data.action === 'grant') {
+        setSuccess('Your booking has been approved by admin!');
+      } else {
+        setError('Your booking was declined by admin.');
+      }
+    });
+
+    socketRef.current = socket;
+    
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, [navigate]);
 
   const handleSubmit = async (e) => {
@@ -135,7 +166,6 @@ const BookService = () => {
     setSubmitting(true);
     // Debug log to verify selectedService
     console.log('DEBUG selectedService:', selectedService);
-    const user = JSON.parse(localStorage.getItem('user'));
     // Format date to YYYY-MM-DD
     let date = formData.scheduledDate;
     if (date && date.includes('/')) {
@@ -165,9 +195,9 @@ const BookService = () => {
     setBaseFare(selectedService?.basePrice || 1000);
     try {
       const bookingRes = await bookingsAPI.createBooking(bookingData);
-      // Do NOT set any success message here
       setLatestBookingId(bookingRes.data.id); // Store booking ID for confirmation
-      setTimeout(() => setShowOffers(true), 5000);
+      setSuccess('Booking created successfully! Waiting for technician offers...');
+      // Don't auto-show offers - wait for real technician responses
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create booking. Please try again.');
       console.error('Booking error:', err);
@@ -204,7 +234,7 @@ const BookService = () => {
       const technicianId = acceptedTechnician.technicianId || acceptedTechnician.id;
       await bookingsAPI.confirmBooking(latestBookingId, {
         technicianId,
-        status: 'confirmed',
+        status: 'Approved',
         paymentMethod: selectedPayment,
       });
       setBookingConfirmed(true);
@@ -219,25 +249,7 @@ const BookService = () => {
     }
   };
 
-  const StarRating = ({ rating }) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <svg
-            key={star}
-            className={`w-4 h-4 ${
-              star <= rating ? 'text-yellow-400' : 'text-gray-300'
-            }`}
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        ))}
-        <span className="ml-1 text-sm text-gray-600">({rating})</span>
-      </div>
-    );
-  };
+
 
   if (loading) {
     return (
@@ -249,7 +261,12 @@ const BookService = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <NotificationOffers show={showOffers} baseFare={baseFare} onAccept={handleAcceptOffer} />
+                  <NotificationOffers 
+              show={showOffers} 
+              baseFare={baseFare} 
+              onAccept={handleAcceptOffer}
+              realOffers={realOffers}
+            />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Book a Service</h1>

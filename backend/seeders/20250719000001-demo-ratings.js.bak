@@ -1,0 +1,37 @@
+'use strict';
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    const ratings = [];
+    const technicians = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // First 10 technicians
+    const customers = [1]; // Customer ID 1 (Clinton)
+    
+    // Generate random ratings for each technician
+    technicians.forEach(technicianId => {
+      // Generate 3-8 ratings per technician
+      const numRatings = Math.floor(Math.random() * 6) + 3;
+      
+      for (let i = 0; i < numRatings; i++) {
+        const rating = Math.floor(Math.random() * 2) + 4; // 4-5 stars for demo
+        const customerId = customers[Math.floor(Math.random() * customers.length)];
+        
+        ratings.push({
+          technicianId,
+          customerId,
+          bookingId: Math.floor(Math.random() * 10) + 1, // Random booking ID 1-10
+          rating,
+          review: rating === 5 ? 'Excellent service! Very professional and skilled.' : 
+                 rating === 4 ? 'Good service, would recommend.' : 'Satisfactory work.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    });
+
+    await queryInterface.bulkInsert('Ratings', ratings, {});
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.bulkDelete('Ratings', null, {});
+  }
+}; 

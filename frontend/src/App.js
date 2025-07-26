@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import BookService from './pages/BookService';
 import UserProfile from './pages/UserProfile';
+import CustomerProfile from './pages/CustomerProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import LoginAdmin from './pages/LoginAdmin.jsx';
@@ -22,6 +23,14 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace />;
   }
   return children;
+}
+
+function CustomerProfileRedirect() {
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (user && user.role === 'user') {
+    return <Navigate to="/customer/profile" replace />;
+  }
+  return <UserProfile />;
 }
 
 function App() {
@@ -39,8 +48,18 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/book" element={<BookService />} />
             <Route path="/profile" element={
-              <ProtectedRoute allowedRoles={['customer']}>
-                <UserProfile />
+              <ProtectedRoute allowedRoles={['user', 'customer']}>
+                <CustomerProfileRedirect />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/profile" element={
+              <ProtectedRoute allowedRoles={['user']}>
+                <CustomerProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/technician/profile" element={
+              <ProtectedRoute allowedRoles={['technician']}>
+                <TechnicianDashboard />
               </ProtectedRoute>
             } />
             <Route path="/admin/dashboard" element={

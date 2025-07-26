@@ -45,8 +45,16 @@ const Navbar = () => {
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center text-2xl font-bold text-primary">
-            <span className="text-blue-700 mr-2">Smart Door Step</span>
+          <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition duration-200">
+            <img 
+              src="/assets/logo.png" 
+              alt="Smart Door Step Logo" 
+              className="h-10 w-auto rounded-none shadow-none"
+            />
+            <span className="text-xl font-bold text-gray-900">
+              <span className="text-blue-700">Smart</span>
+              <span className="text-gray-700"> Door Step</span>
+            </span>
           </Link>
           <div className="flex items-center space-x-4">
             {/* Role-based navigation */}
@@ -67,7 +75,7 @@ const Navbar = () => {
                 <>
                   <Link to="/" className={`text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition duration-200 ${isActive('/') ? 'font-bold underline' : ''}`}>Home</Link>
                   <Link to="/book" className={`text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition duration-200 ${isActive('/book') ? 'font-bold underline' : ''}`}>Book Service</Link>
-                  <Link to="/profile" className={`text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition duration-200 ${isActive('/profile') ? 'font-bold underline' : ''}`}>My Profile</Link>
+                  <Link to="/customer/profile" className={`text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition duration-200 ${isActive('/customer/profile') ? 'font-bold underline' : ''}`}>My Profile</Link>
                   {/* Bell Icon for notifications */}
                   <div className="relative inline-block">
                     <button

@@ -15,12 +15,29 @@ const UserProfile = () => {
   const [notification, setNotification] = useState('');
   const socketRef = useRef(null);
   const audioRef = useRef(null);
+  const [quoteResponseLoading, setQuoteResponseLoading] = useState({});
+  const [quoteResponseError, setQuoteResponseError] = useState({});
 
   // Move fetchUserData above useEffect
   const handleLogout = useCallback(() => {
     authAPI.logout();
     navigate('/login');
   }, [navigate]);
+
+  const handleQuoteResponse = async (bookingId, response) => {
+    setQuoteResponseLoading((prev) => ({ ...prev, [bookingId]: true }));
+    setQuoteResponseError((prev) => ({ ...prev, [bookingId]: '' }));
+    
+    try {
+      await bookingsAPI.respondToQuote(bookingId, response);
+      await fetchUserData();
+      setNotification(`Quote ${response}ed successfully!`);
+    } catch (err) {
+      setQuoteResponseError((prev) => ({ ...prev, [bookingId]: 'Failed to respond. Try again.' }));
+    } finally {
+      setQuoteResponseLoading((prev) => ({ ...prev, [bookingId]: false }));
+    }
+  };
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -48,7 +65,7 @@ const UserProfile = () => {
       navigate('/login');
       return;
     }
-    if (userObj.role !== 'user') {
+    if (userObj.role !== 'user' && userObj.role !== 'customer') {
       navigate('/technician/profile');
       return;
     }
@@ -58,6 +75,29 @@ const UserProfile = () => {
     socket.emit('register', { userId: userObj.id, role: userObj.role });
     socket.on('booking:status', ({ id, status }) => {
       setNotification(`Booking #${id} status updated: ${status}`);
+      fetchUserData();
+      if (audioRef.current) audioRef.current.play();
+    });
+    socket.on('booking:quoted', ({ id, proposedPrice, technicianName, serviceName }) => {
+      setNotification(`Quote received for ${serviceName} from ${technicianName}: Rs. ${proposedPrice}`);
+      fetchUserData();
+      if (audioRef.current) audioRef.current.play();
+    });
+    socket.on('booking:offer', ({ bookingId, technicianName, proposedFare, eta, responseStatus, serviceName }) => {
+      if (responseStatus === 'accepted') {
+        setNotification(`🎉 ${technicianName} accepted your ${serviceName} request! Fare: Rs. ${proposedFare}, ETA: ${eta}`);
+      } else if (responseStatus === 'rejected') {
+        setNotification(`❌ ${technicianName} declined your ${serviceName} request`);
+      }
+      fetchUserData();
+      if (audioRef.current) audioRef.current.play();
+    });
+    socket.on('booking:response', ({ bookingId, technicianName, proposedFare, eta, responseStatus, serviceName }) => {
+      if (responseStatus === 'accepted') {
+        setNotification(`🎉 ${technicianName} accepted your ${serviceName} request! Fare: Rs. ${proposedFare}, ETA: ${eta}`);
+      } else if (responseStatus === 'rejected') {
+        setNotification(`❌ ${technicianName} declined your ${serviceName} request`);
+      }
       fetchUserData();
       if (audioRef.current) audioRef.current.play();
     });
@@ -75,7 +115,9 @@ const UserProfile = () => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       'pending': 'bg-yellow-100 text-yellow-800',
-      'confirmed': 'bg-blue-100 text-blue-800',
+      'quoted': 'bg-blue-100 text-blue-800',
+      'confirmed': 'bg-green-100 text-green-800',
+      'declined': 'bg-red-100 text-red-800',
       'in_progress': 'bg-orange-100 text-orange-800',
       'completed': 'bg-green-100 text-green-800',
       'cancelled': 'bg-red-100 text-red-800'
@@ -246,7 +288,12 @@ const UserProfile = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-primary">
-                            Rs. {booking.service?.basePrice || booking.totalAmount}
+                            {booking.status === 'quoted' && booking.proposedPrice 
+                              ? `Rs. ${booking.proposedPrice} (Proposed)`
+                              : booking.status === 'confirmed' && booking.proposedPrice
+                              ? `Rs. ${booking.proposedPrice} (Accepted)`
+                              : `Rs. ${booking.service?.basePrice || booking.totalAmount}`
+                            }
                           </div>
                           {getStatusBadge(booking.status)}
                         </div>
@@ -255,13 +302,22 @@ const UserProfile = () => {
                         <div>
                           <span className="text-gray-600">Scheduled Date:</span>
                           <span className="ml-2 font-medium">
-                            {booking.scheduledDate ? formatDate(booking.scheduledDate) : 'TBD'}
+                            {booking.date ? new Date(booking.date).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            }) : 'TBD'}
+                            {booking.time && ` at ${new Date(`2000-01-01T${booking.time}`).toLocaleTimeString('en-US', { 
+                              hour: 'numeric', 
+                              minute: '2-digit',
+                              hour12: true 
+                            })}`}
                           </span>
                         </div>
                         <div>
                           <span className="text-gray-600">Technician:</span>
                           <span className="ml-2 font-medium">
-                            {booking.technician?.fullName || 'Assigned'}
+                            {booking.technician?.name || booking.technician?.fullName || 'Assigned'}
                           </span>
                         </div>
                         <div>
@@ -273,10 +329,72 @@ const UserProfile = () => {
                         <div>
                           <span className="text-gray-600">Notes:</span>
                           <span className="ml-2 font-medium">
-                            {booking.notes || 'No special instructions'}
+                            {booking.notes || booking.problemNote || 'No special instructions'}
                           </span>
                         </div>
                       </div>
+
+                      {/* Quote Response Section */}
+                      {booking.status === 'quoted' && booking.proposedPrice && (
+                        <div className="mt-4 pt-3 border-t border-gray-200">
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-blue-800 font-medium mb-1">
+                              Quote Received from {booking.technician?.name || 'Technician'}
+                            </p>
+                            <p className="text-sm text-blue-600">
+                              Proposed Price: <span className="font-bold">Rs. {booking.proposedPrice}</span>
+                            </p>
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => handleQuoteResponse(booking.id, 'accept')}
+                              disabled={quoteResponseLoading[booking.id]}
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition duration-200"
+                            >
+                              {quoteResponseLoading[booking.id] ? 'Accepting...' : 'Accept Quote'}
+                            </button>
+                            <button
+                              onClick={() => handleQuoteResponse(booking.id, 'reject')}
+                              disabled={quoteResponseLoading[booking.id]}
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition duration-200"
+                            >
+                              {quoteResponseLoading[booking.id] ? 'Rejecting...' : 'Reject Quote'}
+                            </button>
+                          </div>
+                          {quoteResponseError[booking.id] && (
+                            <div className="text-red-500 text-sm mt-2">{quoteResponseError[booking.id]}</div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Status Messages */}
+                      {booking.status === 'confirmed' && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm text-green-800 font-medium">Quote Accepted</p>
+                            <p className="text-xs text-green-600">Your technician will contact you soon</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {booking.status === 'declined' && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p className="text-sm text-red-800 font-medium">Quote Declined</p>
+                            <p className="text-xs text-red-600">This booking has been cancelled</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {booking.status === 'pending' && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p className="text-sm text-yellow-800 font-medium">Waiting for Quote</p>
+                            <p className="text-xs text-yellow-600">Technician will send you a quote soon</p>
+                          </div>
+                        </div>
+                      )}
+
                       {booking.status === 'completed' && (
                         <div className="mt-3 pt-3 border-t border-gray-200">
                           <button className="text-primary hover:text-blue-700 text-sm font-medium">
