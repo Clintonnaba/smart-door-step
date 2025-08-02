@@ -1,0 +1,30 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle for the icon -->
+  <circle cx="25" cy="30" r="20" fill="#2563eb" opacity="0.1"/>
+  
+  <!-- House/Door Icon -->
+  <g transform="translate(15, 20)">
+    <!-- House base -->
+    <rect x="0" y="8" width="20" height="12" fill="#2563eb" rx="1"/>
+    
+    <!-- Roof -->
+    <path d="M0 8 L10 0 L20 8 Z" fill="#1d4ed8"/>
+    
+    <!-- Door -->
+    <rect x="6" y="12" width="8" height="8" fill="#ffffff" rx="0.5"/>
+    
+    <!-- Door handle -->
+    <circle cx="12" cy="16" r="0.8" fill="#2563eb"/>
+    
+    <!-- Windows -->
+    <rect x="2" y="10" width="3" height="3" fill="#ffffff" rx="0.3"/>
+    <rect x="15" y="10" width="3" height="3" fill="#ffffff" rx="0.3"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="55" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Smart</text>
+  <text x="55" y="42" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#2563eb">Door Step</text>
+  
+  <!-- Tagline -->
+  <text x="55" y="52" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">Home Services</text>
+</svg> 
